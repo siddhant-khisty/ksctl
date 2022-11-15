@@ -77,25 +77,40 @@ func fetchAPIKey() string {
 // TODO demoScript try the script whether its working or not
 func demoScript() string {
 	return `#!/bin/bash
-sudo apt update -y
-sudo apt install nginx git -y
+sudo apt update -y 
+sudo apt install -y nginx git
 `
 }
 
 func CreateVM(name, region string) {
 	var cargo payload.CivoProvider = payload.CivoProvider{Region: region, APIKey: fetchAPIKey()}
-	client, err := civogo.NewClient(cargo.APIKey, cargo.Region)
+
+
+  client, err := civogo.NewClient(cargo.APIKey, cargo.Region)
 	defaultNetwork, err := client.GetDefaultNetwork()
 	if err != nil {
 		panic(err.Error())
 	}
 
 	diskImg, err := client.GetDiskImageByName("ubuntu-focal")
+  
+  firewallConfig := &civogo.FirewallConfig{
+    Name: name,
+    Region: region,
+    NetworkID: defaultNetwork.ID,
+  }
+
+  firewall, err := client.NewFirewall(firewallConfig)
+
+  if err != nil {
+    panic(err.Error())
+  }
 
 	abcd := &civogo.InstanceConfig{
 		Hostname: name,
 		Region:   cargo.Region,
 		//Count:      3,
+    FirewallID: firewall.ID,
 		Size:       "g3.xsmall",
 		TemplateID: diskImg.ID,
 		NetworkID:  defaultNetwork.ID,
